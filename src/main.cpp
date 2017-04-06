@@ -23,7 +23,7 @@ int main(){
       cout << "MSE : " << img.MSE(solver.get_reconstructed_image()) << endl;
 
 
-  }catch(exception const& e){
+  }catch(exception const& e){ 
       cerr << "ERROR : " << e.what() << endl;
   }
   return 0;

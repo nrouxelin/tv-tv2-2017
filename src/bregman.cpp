@@ -3,9 +3,9 @@ using namespace std;
 using namespace cimg_library;
 
 BregmanSolver::BregmanSolver(DiffImg f, float a, float b, float l1, float l2):
-m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
+m_f(f),m_u(f),m_rfd(f),m_ifd(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
     //Creating v:=\nabla u
-      DiffImg vx(f),  vy(f);
+      DiffImg vx(f), vy(f);
       //Creating w:=\nabla^2 u
       DiffImg wxx(f), wyy(f), wxy(f);
 
@@ -43,12 +43,16 @@ m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
       m_b2.push_back(b2_2);
       m_b2.push_back(b2_3);
 
+      m_rfd.fill(0.0);
+      m_ifd.fill(0.0);
+
+
       m_iter = 0;
 
 }
 
 
-void BregmanSolver::solveSubproblem2(){
+void BregmanSolver::solve_subproblem2(){
     FloatImg s1(m_u), s2(m_u);
     //Filling s1 and s2
     cimg_forXYC(m_u,x,y,c){
@@ -65,7 +69,7 @@ void BregmanSolver::solveSubproblem2(){
     }
 }
 
-void BregmanSolver::solveSubproblem3(){
+void BregmanSolver::solve_subproblem3(){
     FloatImg t1(m_u), t2(m_u), t3(m_u);
     //Filling t1, t2 and t3
     cimg_forXYC(m_u,x,y,c){
@@ -87,7 +91,7 @@ void BregmanSolver::solveSubproblem3(){
     }
 }
 
-void BregmanSolver::updateB(){
+void BregmanSolver::update_b(){
     cimg_forXYC(m_u,x,y,c){
         //Updating b_1
         m_b1[0](x,y,c) = m_b1[0](x,y,c)+m_u.fdx(x,y,c)-m_v[0](x,y,c);
@@ -100,7 +104,7 @@ void BregmanSolver::updateB(){
     }
 }
 
-void BregmanSolver::solveSubproblem1GS(){
+void BregmanSolver::solve_subproblem1_GS(){
     //Compute right side of the equation
     FloatImg rs(m_u);
     cimg_forXYC(rs,x,y,c){
@@ -141,12 +145,11 @@ void BregmanSolver::solve(){
     int t = 0;//Temps
     cout << "Iter : " << t << ", noise variance = " << m_u.variance_noise() << endl;
     const float white[] = { 255,255,255 };
-    CImg_3x3(I,float); //Voisinnage 3x3
     while(!disp.is_closed()){
-        solveSubproblem1GS();
-        solveSubproblem2();
-        solveSubproblem3();
-        updateB();
+        solve_subproblem1_GS();
+        solve_subproblem2();
+        solve_subproblem3();
+        update_b();
 
         //Display iteration number
         t++;
@@ -166,4 +169,56 @@ void BregmanSolver::save(const char* const filename){
     const float white[] = { 255,255,255 };
     string str = string("img/output/")+filename;
     cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,m_iter+1).save(str.c_str());
+}
+
+void BregmanSolver::solve_subproblem1(){
+    //Compute right side of the equation
+    FloatImg rs(m_u), rsRealFFT(m_u), rsImagFFT(m_u);
+    cimg_forXYC(rs,x,y,c){
+        rs(x,y,c) = m_f(x,y,c)+m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
+                    -m_l2*(m_b2[0].dxx(x,y,c)-m_w[0].dxx(x,y,c)+m_b2[1].dyy(x,y,c)
+                    -m_w[1].dyy(x,y,c)+2.0f*(m_b2[2].dxy(x,y,c)-m_w[2].dxy(x,y,c)));
+        if(rs(x,y,c)!=rs(x,y,c))
+            throw runtime_error("Result of RS is NaN");
+    }
+    //FFT
+    rs.FFT(rsRealFFT,rsImagFFT);
+
+
+
+}
+
+void BregmanSolver::compute_fourier_denominator(){
+    int width  = m_u.width();
+    int height = m_u.height();
+
+    DiffImg rtmp(m_u), itmp(m_u);
+    //dxx matrix
+    DiffImg mxx(m_u);
+    mxx.fill(0);
+    cimg_forC(mxx,c){
+        mxx(0,0,c)       = -2.0;
+        mxx(1,0,c)       = 1.0;
+        mxx(width-1,0,c) = 1.0;
+    }
+    mxx.FFT(rtmp,itmp);
+    m_rfd -= m_l1*rtmp;
+    m_ifd -= m_l1*itmp;
+    delete &mxx;
+
+    //dyy matrix
+    DiffImg myy(m_u);
+    myy.fill(0.0);
+    cimg_forC(myy,c){
+        myy(0,0,c)        = -2.0;
+        myy(0,1,c)        = 1.0;
+        myy(0,height-1,c) = 1.0;
+    }
+    myy.FFT(rtmp,itmp);
+    m_rfd -= m_l1*rtmp;
+    m_ifd -= m_l1*itmp;
+    delete &myy;
+
+    //d4x matrix
+    DiffImg m4x(m_u);
 }

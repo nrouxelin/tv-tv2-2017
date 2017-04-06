@@ -9,16 +9,20 @@ namespace cil = cimg_library;
 #include <iostream>
 #include <string>
 
+
+
 typedef std::vector<DiffImg> ArrayDiffImg;
 
 class BregmanSolver{
 public:
     BregmanSolver(DiffImg f, float a, float b, float l1, float l2);
-    void solveSubproblem1GS();
-    void solveSubproblem2();
-    void solveSubproblem3();
-    void updateB();
+    void solve_subproblem1();
+    void solve_subproblem1_GS();
+    void solve_subproblem2();
+    void solve_subproblem3();
+    void update_b();
     void solve();
+    void compute_fourier_denominator();
     DiffImg get_reconstructed_image();
     void save(const char* const filename);
 
@@ -26,6 +30,7 @@ public:
 private:
     DiffImg m_f;//Original image
     DiffImg m_u;//Reconstructed image
+    DiffImg m_rfd, m_ifd;//Fourier denominator
     ArrayDiffImg m_v;//v:=\nabla u
     ArrayDiffImg m_w; //w:=\nabla^2u
     ArrayDiffImg m_b1;//b_1^n

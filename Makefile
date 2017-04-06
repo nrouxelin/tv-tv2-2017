@@ -37,4 +37,4 @@ all: $(OBJ)
 
 #Cleaning rule
 clean:
-	rm $(BIN_DIR)/* $(OBJ_DIR)/* $(FOBJ_DIR)/*
+	rm $(BIN_DIR)/* $(OBJ_DIR)/*
