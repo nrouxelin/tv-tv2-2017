@@ -4,11 +4,12 @@
 #include "CImg.h"
 namespace cil = cimg_library;
 typedef cil::CImg<float> FloatImg;
+typedef cil::CImgList<float> FloatImgList;
 #include <stdexcept>
 
 class DiffImg: public FloatImg{
 public:
-    //DiffImg(FloatImg img);
+    DiffImg(FloatImg img);
     DiffImg(const char *const filename);
     float fdx(int x, int y, int c);
     float fdy(int x, int y, int c);

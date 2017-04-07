@@ -3,7 +3,7 @@ using namespace std;
 using namespace cimg_library;
 
 BregmanSolver::BregmanSolver(DiffImg f, float a, float b, float l1, float l2):
-m_f(f),m_u(f),m_rfd(f),m_ifd(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
+m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
     //Creating v:=\nabla u
       DiffImg vx(f), vy(f);
       //Creating w:=\nabla^2 u
@@ -43,8 +43,6 @@ m_f(f),m_u(f),m_rfd(f),m_ifd(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
       m_b2.push_back(b2_2);
       m_b2.push_back(b2_3);
 
-      m_rfd.fill(0.0);
-      m_ifd.fill(0.0);
 
 
       m_iter = 0;
@@ -141,12 +139,13 @@ void BregmanSolver::solve_subproblem1_GS(){
 
 
 void BregmanSolver::solve(){
+    compute_fourier_denominator();
     CImgDisplay disp((m_u,m_f),"TV-TV2 denoising",0,false,false);
     int t = 0;//Temps
     cout << "Iter : " << t << ", noise variance = " << m_u.variance_noise() << endl;
     const float white[] = { 255,255,255 };
     while(!disp.is_closed()){
-        solve_subproblem1_GS();
+        solve_subproblem1();
         solve_subproblem2();
         solve_subproblem3();
         update_b();
@@ -173,7 +172,7 @@ void BregmanSolver::save(const char* const filename){
 
 void BregmanSolver::solve_subproblem1(){
     //Compute right side of the equation
-    FloatImg rs(m_u), rsRealFFT(m_u), rsImagFFT(m_u);
+    FloatImg rs(m_u);
     cimg_forXYC(rs,x,y,c){
         rs(x,y,c) = m_f(x,y,c)+m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
                     -m_l2*(m_b2[0].dxx(x,y,c)-m_w[0].dxx(x,y,c)+m_b2[1].dyy(x,y,c)
@@ -182,17 +181,34 @@ void BregmanSolver::solve_subproblem1(){
             throw runtime_error("Result of RS is NaN");
     }
     //FFT
-    rs.FFT(rsRealFFT,rsImagFFT);
+    FloatImgList frs = rs.get_FFT();
+    frs[0].div(m_fd[0]);
+    frs[1].div(m_fd[1]);
+    cimg_forXYC(frs[0],x,y,c){
+        cout << frs[0](x,y,c) << endl;
+    }
+    FloatImg::FFT(frs[0],frs[1],true);
+    frs[0].normalize(0,255);
 
-
-
+    DiffImg tmp((FloatImg) frs[0]);
+    m_u = tmp;
 }
 
 void BregmanSolver::compute_fourier_denominator(){
     int width  = m_u.width();
     int height = m_u.height();
+    FloatImgList tmp;
 
-    DiffImg rtmp(m_u), itmp(m_u);
+    //WIP eye matrix
+    FloatImg id(m_u);
+    id.fill(0.0);
+    cimg_forXYC(id,x,y,c){
+        if(x==y)
+            id(x,y,c) = 1;
+    }
+    m_fd = id.get_FFT();
+    //delete &id;
+
     //dxx matrix
     DiffImg mxx(m_u);
     mxx.fill(0);
@@ -201,10 +217,10 @@ void BregmanSolver::compute_fourier_denominator(){
         mxx(1,0,c)       = 1.0;
         mxx(width-1,0,c) = 1.0;
     }
-    mxx.FFT(rtmp,itmp);
-    m_rfd -= m_l1*rtmp;
-    m_ifd -= m_l1*itmp;
-    delete &mxx;
+    tmp      = mxx.get_FFT();
+    m_fd[0] -= m_l1*tmp[0];
+    m_fd[1] -= m_l1*tmp[1];
+    //delete &mxx;
 
     //dyy matrix
     DiffImg myy(m_u);
@@ -214,11 +230,56 @@ void BregmanSolver::compute_fourier_denominator(){
         myy(0,1,c)        = 1.0;
         myy(0,height-1,c) = 1.0;
     }
-    myy.FFT(rtmp,itmp);
-    m_rfd -= m_l1*rtmp;
-    m_ifd -= m_l1*itmp;
-    delete &myy;
+    tmp      = myy.get_FFT();
+    m_fd[0] -= m_l1*tmp[0];
+    m_fd[1] -= m_l1*tmp[1];
+    //delete &myy;
 
     //d4x matrix
     DiffImg m4x(m_u);
+    m4x.fill(0.0);
+    cimg_forC(m4x,c){
+        m4x(0,0,c)       = 6;
+        m4x(1,0,c)       = -4;
+        m4x(width-2,0,c) = 1;
+        m4x(width-1,0,c) = -4;
+    }
+    tmp      = m4x.get_FFT();
+    m_fd[0] += m_l2*tmp[0];
+    m_fd[1] += m_l2*tmp[1];
+    //delete &m4x;
+
+    //d4y matri
+    DiffImg m4y(m_u);
+    m4y.fill(0.0);
+    cimg_forC(m4y,c){
+        m4y(0,0,c)       = 6;
+        m4y(0,1,c)       = -4;
+        m4y(0,height-2,c) = 1;
+        m4y(0,height-1,c) = -4;
+    }
+    tmp      = m4y.get_FFT();
+    m_fd[0] += m_l2*tmp[0];
+    m_fd[1] += m_l2*tmp[1];
+    //delete &m4y;
+
+    //d2x2y matrix
+    DiffImg m2x2y(m_u);
+    m2x2y.fill(0.0);
+    cimg_forC(m2x2y,c){
+        m2x2y(0,0)                = 4;
+        m2x2y(0,1)                = -2;
+        m2x2y(1,0)                = -2;
+        m2x2y(1,1)                = 1;
+        m2x2y(width-1,0)          = -2;
+        m2x2y(width-1,1)          = 1;
+        m2x2y(0,height-1,c)       = -2;
+        m2x2y(1,height-1,c)       = 1;
+        m2x2y(width-1,height-1,c) = 1;
+    }
+    tmp      = m2x2y.get_FFT();
+    m_fd[0] += m_l2*tmp[0];
+    m_fd[1] += m_l2*tmp[1];
+    //delete &m2x2y;
+
 }

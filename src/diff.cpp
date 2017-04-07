@@ -4,6 +4,7 @@ using namespace std;
 
 
 DiffImg::DiffImg(const char *const filename):FloatImg(filename){};
+DiffImg::DiffImg(FloatImg I):FloatImg(I){};
 
 float DiffImg::at(int x, int y, int c){
     if(spectrum() && c>=0){
@@ -15,7 +16,7 @@ float DiffImg::at(int x, int y, int c){
         }else if(x<0){
             x = w+x;
         }
-        
+
         if(y>=h){
             y = y-h;
         }else if(y<0){

@@ -30,7 +30,7 @@ public:
 private:
     DiffImg m_f;//Original image
     DiffImg m_u;//Reconstructed image
-    DiffImg m_rfd, m_ifd;//Fourier denominator
+    FloatImgList m_fd;//Fourier denominator
     ArrayDiffImg m_v;//v:=\nabla u
     ArrayDiffImg m_w; //w:=\nabla^2u
     ArrayDiffImg m_b1;//b_1^n
