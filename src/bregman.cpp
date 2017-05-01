@@ -156,7 +156,7 @@ void BregmanSolver::solve(){
         (cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t),m_f).display(disp.wait(100));
   }
   m_iter = t;
-  cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t+1).save("img/output/test.bmp",t);
+    cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t+1).save("img/output/test.bmp",t);
 }
 
 
@@ -177,21 +177,41 @@ void BregmanSolver::solve_subproblem1(){
         rs(x,y,c) = m_f(x,y,c)+m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
                     -m_l2*(m_b2[0].dxx(x,y,c)-m_w[0].dxx(x,y,c)+m_b2[1].dyy(x,y,c)
                     -m_w[1].dyy(x,y,c)+2.0f*(m_b2[2].dxy(x,y,c)-m_w[2].dxy(x,y,c)));
-        if(rs(x,y,c)!=rs(x,y,c))
-            throw runtime_error("Result of RS is NaN");
     }
+    if(rs.is_nan())
+        throw runtime_error("Result of RS is NaN");
+
     //FFT
     FloatImgList frs = rs.get_FFT();
-    frs[0].div(m_fd[0]);
-    frs[1].div(m_fd[1]);
-    cimg_forXYC(frs[0],x,y,c){
-        cout << frs[0](x,y,c) << endl;
-    }
-    FloatImg::FFT(frs[0],frs[1],true);
-    frs[0].normalize(0,255);
 
-    DiffImg tmp((FloatImg) frs[0]);
-    m_u = tmp;
+    FloatImg denom(frs[0]);
+    denom = m_fd[0].get_pow(2)+m_fd[1].get_pow(2);
+    //denom = m_fd[0].get_mul(m_fd[0])+m_fd[1].get_mul(m_fd[1]);
+    cimg_forXYC(denom,x,y,c){
+        if(denom(x,y,c) == 0){
+            denom(x,y,c) = 0.001;
+            cout << x << " " << y << " " << c << endl;
+        }
+    }
+
+    frs[0] = frs[0].get_mul(m_fd[0])+frs[1].get_mul(m_fd[1]);
+    frs[0].div(denom);
+
+    frs[1] = frs[0].get_mul(m_fd[1])-frs[1].get_mul(m_fd[0]);
+    frs[1].div(denom);
+
+    FloatImg::FFT(frs[0],frs[1],true);
+    m_u = frs[0].normalize(0,255).rotate(180);
+
+
+    /**if(frs[0].is_nan()){
+        throw runtime_error("An error occured while computing FRS");
+    }else{
+        cimg_forXYC(m_u,x,y,c){
+            m_u(x,y,c) = frs[0](x,y,c);
+        }
+    }**/
+
 }
 
 void BregmanSolver::compute_fourier_denominator(){
@@ -199,15 +219,16 @@ void BregmanSolver::compute_fourier_denominator(){
     int height = m_u.height();
     FloatImgList tmp;
 
-    //WIP eye matrix
+    //dirac
     FloatImg id(m_u);
     id.fill(0.0);
-    cimg_forXYC(id,x,y,c){
-        if(x==y)
-            id(x,y,c) = 1;
+    cimg_forC(id,c){
+        id(0,0,c) = 1;
     }
-    m_fd = id.get_FFT();
-    //delete &id;
+    tmp = id.get_FFT();
+    //tmp[0] = tmp[0].get_mul(tmp[0]);
+    m_fd   = tmp;
+
 
     //dxx matrix
     DiffImg mxx(m_u);
@@ -217,10 +238,11 @@ void BregmanSolver::compute_fourier_denominator(){
         mxx(1,0,c)       = 1.0;
         mxx(width-1,0,c) = 1.0;
     }
+
     tmp      = mxx.get_FFT();
     m_fd[0] -= m_l1*tmp[0];
     m_fd[1] -= m_l1*tmp[1];
-    //delete &mxx;
+
 
     //dyy matrix
     DiffImg myy(m_u);
@@ -230,6 +252,7 @@ void BregmanSolver::compute_fourier_denominator(){
         myy(0,1,c)        = 1.0;
         myy(0,height-1,c) = 1.0;
     }
+
     tmp      = myy.get_FFT();
     m_fd[0] -= m_l1*tmp[0];
     m_fd[1] -= m_l1*tmp[1];
@@ -241,45 +264,46 @@ void BregmanSolver::compute_fourier_denominator(){
     cimg_forC(m4x,c){
         m4x(0,0,c)       = 6;
         m4x(1,0,c)       = -4;
+        m4x(2,0,c)       = 1;
         m4x(width-2,0,c) = 1;
         m4x(width-1,0,c) = -4;
     }
     tmp      = m4x.get_FFT();
     m_fd[0] += m_l2*tmp[0];
     m_fd[1] += m_l2*tmp[1];
-    //delete &m4x;
 
     //d4y matri
     DiffImg m4y(m_u);
     m4y.fill(0.0);
     cimg_forC(m4y,c){
-        m4y(0,0,c)       = 6;
-        m4y(0,1,c)       = -4;
+        m4y(0,0,c)        = 6;
+        m4y(0,1,c)        = -4;
+        m4y(0,2,c)        = 1;
         m4y(0,height-2,c) = 1;
         m4y(0,height-1,c) = -4;
     }
     tmp      = m4y.get_FFT();
     m_fd[0] += m_l2*tmp[0];
     m_fd[1] += m_l2*tmp[1];
-    //delete &m4y;
 
     //d2x2y matrix
     DiffImg m2x2y(m_u);
     m2x2y.fill(0.0);
     cimg_forC(m2x2y,c){
-        m2x2y(0,0)                = 4;
-        m2x2y(0,1)                = -2;
-        m2x2y(1,0)                = -2;
-        m2x2y(1,1)                = 1;
-        m2x2y(width-1,0)          = -2;
-        m2x2y(width-1,1)          = 1;
-        m2x2y(0,height-1,c)       = -2;
-        m2x2y(1,height-1,c)       = 1;
-        m2x2y(width-1,height-1,c) = 1;
+        m2x2y(0,0,c)                = 4;
+        m2x2y(0,1,c)                = -2;
+        m2x2y(1,0,c)                = -2;
+        m2x2y(1,1,c)                = 1;
+        m2x2y(width-1,0,c)          = -2;
+        m2x2y(width-1,1,c)          = 1;
+        m2x2y(0,height-1,c)         = -2;
+        m2x2y(1,height-1,c)         = 1;
+        m2x2y(width-1,height-1,c)   = 1;
     }
     tmp      = m2x2y.get_FFT();
-    m_fd[0] += m_l2*tmp[0];
-    m_fd[1] += m_l2*tmp[1];
-    //delete &m2x2y;
+    m_fd[0] += 2*m_l2*tmp[0];
+    m_fd[1] += 2*m_l2*tmp[1];
 
+    if(m_fd[0].is_nan() || m_fd[1].is_nan())
+        throw runtime_error("m_fd is NaN");
 }
