@@ -1,5 +1,5 @@
-#ifndef BREGMAN_H
-#define BREGMAN_H 0
+#ifndef BREGMAN_DENOISER_H
+#define BREGMAN_DENOISER_H 0
 
 #include "CImg.h"
 namespace cil = cimg_library;
@@ -13,9 +13,9 @@ namespace cil = cimg_library;
 
 typedef std::vector<DiffImg> ArrayDiffImg;
 
-class BregmanSolver{
+class BregmanDenoiser{
 public:
-    BregmanSolver(DiffImg f, float a, float b, float l1, float l2);
+    BregmanDenoiser(DiffImg f, float a, float b, float l1, float l2);
     void solve_subproblem1();
     void solve_subproblem1_GS();
     void solve_subproblem2();

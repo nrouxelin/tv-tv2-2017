@@ -1,7 +1,7 @@
 #include <iostream>
 #include "CImg.h"
 #include "diff.h"
-#include "bregman.h"
+#include "denoiser.h"
 using namespace cimg_library;
 using namespace std;
 #include <fenv.h>
@@ -21,7 +21,7 @@ int main(){
       img.save("lena_bruit.bmp");
       //img = img.get_RGBtoYCbCr().get_channel(0);
       //cout << "MSE : " << img.MSE(comp) << endl;
-      BregmanSolver solver(img,0.06f,0.05f,0.6f,0.5f);
+      BregmanDenoiser solver(img,0.06f,0.05f,0.6f,0.5f);
       solver.solve();
       solver.save("lena.bmp");
 

@@ -1,8 +1,8 @@
-#include "bregman.h"
+#include "denoiser.h"
 using namespace std;
 using namespace cimg_library;
 
-BregmanSolver::BregmanSolver(DiffImg f, float a, float b, float l1, float l2):
+BregmanDenoiser::BregmanDenoiser(DiffImg f, float a, float b, float l1, float l2):
 m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
     //Creating v:=\nabla u
       DiffImg vx(f), vy(f);
@@ -50,7 +50,7 @@ m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
 }
 
 
-void BregmanSolver::solve_subproblem2(){
+void BregmanDenoiser::solve_subproblem2(){
     FloatImg s1(m_u), s2(m_u);
     //Filling s1 and s2
     cimg_forXYC(m_u,x,y,c){
@@ -67,7 +67,7 @@ void BregmanSolver::solve_subproblem2(){
     }
 }
 
-void BregmanSolver::solve_subproblem3(){
+void BregmanDenoiser::solve_subproblem3(){
     FloatImg t1(m_u), t2(m_u), t3(m_u);
     //Filling t1, t2 and t3
     cimg_forXYC(m_u,x,y,c){
@@ -89,7 +89,7 @@ void BregmanSolver::solve_subproblem3(){
     }
 }
 
-void BregmanSolver::update_b(){
+void BregmanDenoiser::update_b(){
     cimg_forXYC(m_u,x,y,c){
         //Updating b_1
         m_b1[0](x,y,c) = m_b1[0](x,y,c)+m_u.fdx(x,y,c)-m_v[0](x,y,c);
@@ -102,7 +102,7 @@ void BregmanSolver::update_b(){
     }
 }
 
-void BregmanSolver::solve_subproblem1_GS(){
+void BregmanDenoiser::solve_subproblem1_GS(){
     //Compute right side of the equation
     FloatImg rs(m_u);
     cimg_forXYC(rs,x,y,c){
@@ -138,7 +138,7 @@ void BregmanSolver::solve_subproblem1_GS(){
 }
 
 
-void BregmanSolver::solve(){
+void BregmanDenoiser::solve(){
     compute_fourier_denominator();
     CImgDisplay disp((m_u,m_f),"TV-TV2 denoising",0,false,false);
     int t = 0;//Temps
@@ -160,17 +160,17 @@ void BregmanSolver::solve(){
 }
 
 
-DiffImg BregmanSolver::get_reconstructed_image(){
+DiffImg BregmanDenoiser::get_reconstructed_image(){
     return m_u;
 }
 
-void BregmanSolver::save(const char* const filename){
+void BregmanDenoiser::save(const char* const filename){
     const float white[] = { 255,255,255 };
     string str = string("img/output/")+filename;
     cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,m_iter+1).save(str.c_str());
 }
 
-void BregmanSolver::solve_subproblem1(){
+void BregmanDenoiser::solve_subproblem1(){
     //Compute right side of the equation
     FloatImg rs(m_u);
     cimg_forXYC(rs,x,y,c){
@@ -214,7 +214,7 @@ void BregmanSolver::solve_subproblem1(){
 
 }
 
-void BregmanSolver::compute_fourier_denominator(){
+void BregmanDenoiser::compute_fourier_denominator(){
     int width  = m_u.width();
     int height = m_u.height();
     FloatImgList tmp;
