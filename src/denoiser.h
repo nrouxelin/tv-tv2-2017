@@ -35,7 +35,6 @@ private:
     ArrayDiffImg m_w; //w:=\nabla^2u
     ArrayDiffImg m_b1;//b_1^n
     ArrayDiffImg m_b2;//b_2^n
-    DiffImg m_b0;
     float m_l1, m_l2,m_a,m_b;
     int m_iter;
 
