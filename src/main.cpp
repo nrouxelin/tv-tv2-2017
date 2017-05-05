@@ -17,7 +17,7 @@ int main(){
       char* filename = "img/input/lena_masque.bmp";
       DiffImg img(filename);
       FloatImg comp(filename);
-      FloatImg mask(img),;
+      FloatImg mask(img);
 
       mask.fill(1.0);
       cimg_forXY(mask,x,y){

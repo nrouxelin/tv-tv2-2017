@@ -31,16 +31,16 @@ m_mask(mask),m_f(f),m_u(f),m_tu(f),m_l0(l0),m_l1(l1),m_l2(l2),m_a(a),m_b(b),m_b0
 
       //-----WIP-----
       DiffImg b1_1(f), b1_2(f), b2_1(f), b2_2(f), b2_3(f), b0(f);
-      m_b0.fill(0.01);
+      m_b0.fill(1);
 
-      b1_1.fill(0.01);
-      b1_2.fill(0.01);
+      b1_1.fill(1);
+      b1_2.fill(1);
       m_b1.push_back(b1_1);
       m_b1.push_back(b1_2);
 
-      b2_1.fill(0.01);
-      b2_2.fill(0.01);
-      b2_3.fill(0.01);
+      b2_1.fill(1);
+      b2_2.fill(1);
+      b2_3.fill(1);
       m_b2.push_back(b2_1);
       m_b2.push_back(b2_2);
       m_b2.push_back(b2_3);

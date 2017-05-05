@@ -31,7 +31,7 @@ m_f(f),m_u(f),m_l1(l1),m_l2(l2),m_a(a),m_b(b){
 
       //-----WIP-----
       DiffImg b1_1(f), b1_2(f), b2_1(f), b2_2(f), b2_3(f);
-      b1_1.fill(0.01);
+      b1_1.fill(01);
       b1_2.fill(0.01);
       m_b1.push_back(b1_1);
       m_b1.push_back(b1_2);
