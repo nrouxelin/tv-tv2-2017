@@ -17,16 +17,16 @@ int main(){
       char* filename = "img/input/lena_masque.bmp";
       DiffImg img(filename);
       FloatImg comp(filename);
-      FloatImg mask(img),mask2(img);
+      FloatImg mask(img),;
 
-      mask.fill(1);
+      mask.fill(1.0);
       cimg_forXY(mask,x,y){
           if(img(x,y,0)==0 && img(x,y,1)==0 && img(x,y,2)==0){
-              mask(x,y,0) = 0;
+              mask(x,y,0) = 0.0;
           }
       }
       img = img.get_RGBtoYCbCr().get_channel(0);
-      mask = mask.get_RGBtoYCbCr().get_channel(0);
+      mask = mask.get_channel(0);
       //cout << "MSE : " << img.MSE(comp) << endl;
       BregmanInpainter solver(img,mask,0.001f,0.001f,0.01f,0.01f,0.01f);
       solver.solve();

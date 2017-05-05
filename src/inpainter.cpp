@@ -31,16 +31,16 @@ m_mask(mask),m_f(f),m_u(f),m_tu(f),m_l0(l0),m_l1(l1),m_l2(l2),m_a(a),m_b(b),m_b0
 
       //-----WIP-----
       DiffImg b1_1(f), b1_2(f), b2_1(f), b2_2(f), b2_3(f), b0(f);
-      m_b0.fill(1.0);
+      m_b0.fill(0.01);
 
-      b1_1.fill(1.0);
-      b1_2.fill(1.0);
+      b1_1.fill(0.01);
+      b1_2.fill(0.01);
       m_b1.push_back(b1_1);
       m_b1.push_back(b1_2);
 
-      b2_1.fill(1.0);
-      b2_2.fill(1.0);
-      b2_3.fill(1.0);
+      b2_1.fill(0.01);
+      b2_2.fill(0.01);
+      b2_3.fill(0.01);
       m_b2.push_back(b2_1);
       m_b2.push_back(b2_2);
       m_b2.push_back(b2_3);
@@ -120,8 +120,8 @@ void BregmanInpainter::compute_fourier_denominator(){
         m4y(0,height-1,c) = -4;
     }
     tmp      = m4y.get_FFT();
-    m_fd[0] += m_l2*tmp[0];
-    m_fd[1] += m_l2*tmp[1];
+    m_fd[0] += 2.0*m_l2*tmp[0];
+    m_fd[1] += 2.0*m_l2*tmp[1];
 
     //d2x2y matrix
     DiffImg m2x2y(m_u);
@@ -138,8 +138,8 @@ void BregmanInpainter::compute_fourier_denominator(){
         m2x2y(width-1,height-1,c)   = 1;
     }
     tmp      = m2x2y.get_FFT();
-    m_fd[0] += 2*m_l2*tmp[0];
-    m_fd[1] += 2*m_l2*tmp[1];
+    m_fd[0] += m_l2*tmp[0];
+    m_fd[1] += m_l2*tmp[1];
 
     if(m_fd[0].is_nan() || m_fd[1].is_nan())
         throw runtime_error("m_fd is NaN");
@@ -148,10 +148,10 @@ void BregmanInpainter::compute_fourier_denominator(){
 
 void BregmanInpainter::solve_subproblem1(){
     float tmp;
-    float coeff = 1.0/(m_l0+2);
+    float coeff = 1.0/(m_l0+2.0);
     cimg_forXYC(m_u,x,y,c){
-        tmp        = ((2*m_mask(x,y,c)))*m_f(x,y,c)
-                        +(m_l0+2*(1-m_mask(x,y,c)))*(m_b0(x,y,c)+m_tu(x,y,c));
+        tmp        = ((2.0*m_mask(x,y,c)))*m_f(x,y,c)
+                        +(m_l0+2.0*(1.0-m_mask(x,y,c)))*(m_b0(x,y,c)+m_tu(x,y,c));
         m_u(x,y,c) = tmp*coeff;
     }
 }
@@ -162,10 +162,10 @@ void BregmanInpainter::solve_subproblem2(){
     //Computing the right side of the equation
     DiffImg rs(m_u);
     cimg_forXYC(rs,x,y,c){
-        rs(x,y,c) = m_l0*m_u(x,y,c)
-            -m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
+        rs(x,y,c) = m_l0*(m_u(x,y,c)-m_b0(x,y,c))
+            +m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
             -m_l2*(m_b2[0].dxx(x,y,c)-m_w[0].dxx(x,y,c)+m_b2[1].dyy(x,y,c)-m_w[1].dyy(x,y,c)
-                +2*(m_b2[2].dxy(x,y,c)-m_w[2].dxy(x,y,c)));
+                +2.0*(m_b2[2].dxy(x,y,c)-m_w[2].dxy(x,y,c)));
     }
 
     //FFT
@@ -188,7 +188,7 @@ void BregmanInpainter::solve_subproblem2(){
     frs[1].div(denom);
 
     FloatImg::FFT(frs[0],frs[1],true);
-    m_tu = frs[0].normalize(0,255);//.rotate(180);
+    m_tu = frs[0].normalize(0,255).rotate(180);
 
 }
 
@@ -203,10 +203,16 @@ void BregmanInpainter::solve_subproblem3(){
     //Computing v^{n+1}
     float norm, m;
     cimg_forXYC(m_v[0],x,y,c){
-        norm          = sqrt(s1(x,y,c)*s1(x,y,c)+s2(x,y,c)*s2(x,y,c));
-        m             = max(norm-(m_a/m_l1),0.0f);
-        m_v[0](x,y,c) = m*(s1(x,y,c)/norm);
-        m_v[1](x,y,c) = m*(s2(x,y,c)/norm);
+        norm  = sqrt(s1(x,y,c)*s1(x,y,c)+s2(x,y,c)*s2(x,y,c));
+        if(norm!=0){
+            m             = max(norm-(m_a/m_l1),0.0f);
+            m_v[0](x,y,c) = m*(s1(x,y,c)/norm);
+            m_v[1](x,y,c) = m*(s2(x,y,c)/norm);
+        }else{
+            m_v[0](x,y,c) = 0.0f;
+            m_v[1](x,y,c) = 0.0f;
+        }
+
     }
 }
 
@@ -223,12 +229,19 @@ void BregmanInpainter::solve_subproblem4(){
     //Computing w^{n+1}
     float norm, m;
     cimg_forXYC(m_w[0],x,y,c){
-        norm         = sqrt(t1(x,y,c)*t1(x,y,c)+t2(x,y,c)*t2(x,y,c)
+        norm = sqrt(t1(x,y,c)*t1(x,y,c)+t2(x,y,c)*t2(x,y,c)
                             +2*t3(x,y,c)*t3(x,y,c));
-        m             = max(norm-(m_b/m_l2),0.0f);
-        m_w[0](x,y,c) = m*(t1(x,y,c)/norm);
-        m_w[1](x,y,c) = m*(t2(x,y,c)/norm);
-        m_w[2](x,y,c) = m*(t3(x,y,c)/norm);
+        if(norm!=0){
+            m             = max(norm-(m_b/m_l2),0.0f);
+            m_w[0](x,y,c) = m*(t1(x,y,c)/norm);
+            m_w[1](x,y,c) = m*(t2(x,y,c)/norm);
+            m_w[2](x,y,c) = m*(t3(x,y,c)/norm);
+        }else{
+            m_w[0](x,y,c) = 0.0f;
+            m_w[1](x,y,c) = 0.0f;
+            m_w[2](x,y,c) = 0.0f;
+        }
+
     }
 }
 
