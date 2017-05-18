@@ -31,16 +31,16 @@ m_mask(mask),m_f(f),m_u(f),m_tu(f),m_l0(l0),m_l1(l1),m_l2(l2),m_a(a),m_b(b),m_b0
 
       //-----WIP-----
       DiffImg b1_1(f), b1_2(f), b2_1(f), b2_2(f), b2_3(f), b0(f);
-      m_b0.fill(1);
+      m_b0.fill(1.0);
 
-      b1_1.fill(1);
-      b1_2.fill(1);
+      b1_1.fill(1.0);
+      b1_2.fill(1.0);
       m_b1.push_back(b1_1);
       m_b1.push_back(b1_2);
 
-      b2_1.fill(1);
-      b2_2.fill(1);
-      b2_3.fill(1);
+      b2_1.fill(1.0);
+      b2_2.fill(1.0);
+      b2_3.fill(1.0);
       m_b2.push_back(b2_1);
       m_b2.push_back(b2_2);
       m_b2.push_back(b2_3);
@@ -65,6 +65,7 @@ void BregmanInpainter::compute_fourier_denominator(){
     m_fd    = tmp;
     m_fd[0] = m_l0*m_fd[0];
     m_fd[1] = m_l0*m_fd[1];
+
 
 
     //dxx matrix
@@ -150,7 +151,7 @@ void BregmanInpainter::solve_subproblem1(){
     float tmp;
     float coeff = 1.0/(m_l0+2.0);
     cimg_forXYC(m_u,x,y,c){
-        tmp        = ((2.0*m_mask(x,y,c)))*m_f(x,y,c)
+        tmp        = (2.0*m_mask(x,y,c))*m_f(x,y,c)
                         +(m_l0+2.0*(1.0-m_mask(x,y,c)))*(m_b0(x,y,c)+m_tu(x,y,c));
         m_u(x,y,c) = tmp*coeff;
     }
@@ -256,25 +257,41 @@ void BregmanInpainter::update_b(){
         m_b2[1](x,y,c) += m_tu.dyy(x,y,c)-m_w[1](x,y,c);
         m_b2[2](x,y,c) += m_tu.dxy(x,y,c)-m_w[2](x,y,c);
     }
+    /**m_b0.normalize(0,255);
+    m_b1[1].normalize(0,255);
+    m_b1[0].normalize(0,255);
+    m_b2[0].normalize(0,255);
+    m_b2[1].normalize(0,255);
+    m_b2[2].normalize(0,255);**/
 }
 
 void BregmanInpainter::solve(){
     CImgDisplay disp((m_u,m_f),"TV-TV2 inpainting",0,false,false);
     int t = 0;//Temps
     const float white[] = { 255,255,255 };
-    while(!disp.is_closed()){
+    DiffImg uOld(m_u);
+    float diff,tmp;
+    diff = 2000;
+    while(diff>8e-5){ //!disp.is_closed()
+        diff = 0;
+        uOld = m_u;
         solve_subproblem1();
         solve_subproblem2();
         solve_subproblem3();
         solve_subproblem4();
         update_b();
+        cimg_forXYC(m_u,x,y,c){
+            tmp = abs(m_u(x,y,c)-uOld(x,y,c));
+            diff = (tmp > diff) ? tmp : diff;
+        }
 
         //Display iteration number
         t++;
         (cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t),m_f).display(disp.wait(100));
+        cimg_library::CImg<>(m_u).save("img/output/test.png",t);
   }
   m_iter = t;
-    cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t+1).save("img/output/test.bmp",t);
+  cimg_library::CImg<>(m_u).save("img/output/test.png",t);
 }
 
 DiffImg BregmanInpainter::get_reconstructed_image(){
@@ -284,5 +301,5 @@ DiffImg BregmanInpainter::get_reconstructed_image(){
 void BregmanInpainter::save(const char* const filename){
     const float white[] = { 255,255,255 };
     string str = string("img/output/")+filename;
-    cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,m_iter+1).save(str.c_str());
+    cimg_library::CImg<>(m_u).save(str.c_str());
 }

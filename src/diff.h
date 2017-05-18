@@ -18,6 +18,7 @@ public:
     float dxx(int x, int y, int c);
     float dyy(int x, int y, int c);
     float dxy(int x, int y, int c);
+    float bdxy(int x, int y, int c);
     float at(int x,int y, int c);
 
 

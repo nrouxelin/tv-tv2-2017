@@ -156,7 +156,7 @@ void BregmanDenoiser::solve(){
         (cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t),m_f).display(disp.wait(100));
   }
   m_iter = t;
-    cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t+1).save("img/output/test.bmp",t);
+    cimg_library::CImg<>(m_u).draw_text(2,2,"iter = %d",white,0,1,13,t+1).save("img/output/test.png",t);
 }
 
 
@@ -176,7 +176,7 @@ void BregmanDenoiser::solve_subproblem1(){
     cimg_forXYC(rs,x,y,c){
         rs(x,y,c) = m_f(x,y,c)+m_l1*(m_b1[0].bdx(x,y,c)-m_v[0].bdx(x,y,c)+m_b1[1].bdy(x,y,c)-m_v[1].bdy(x,y,c))
                     -m_l2*(m_b2[0].dxx(x,y,c)-m_w[0].dxx(x,y,c)+m_b2[1].dyy(x,y,c)
-                    -m_w[1].dyy(x,y,c)+2.0f*(m_b2[2].dxy(x,y,c)-m_w[2].dxy(x,y,c)));
+                    -m_w[1].dyy(x,y,c)+2.0f*(m_b2[2].bdxy(x,y,c)-m_w[2].bdxy(x,y,c)));
     }
     if(rs.is_nan())
         throw runtime_error("Result of RS is NaN");

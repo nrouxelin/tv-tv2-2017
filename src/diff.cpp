@@ -56,3 +56,7 @@ float DiffImg::dyy(int x, int y, int c){
 float DiffImg::dxy(int x, int y, int c){
     return at(x,y,c)-at(x+1,y,c)-at(x,y+1,c)+at(x+1,y+1,c);
 }
+
+float DiffImg::bdxy(int x, int y, int c){
+    return at(x,y,c)-at(x-1,y,c)-at(x,y-1,c)+at(x-1,y-1,c);
+}
