@@ -13,7 +13,9 @@ int main(){
   try{
       feenableexcept(FE_INVALID | FE_OVERFLOW);
       //Original image
-      string filename = "img/input/lena_masque2.bmp";
+      string filename;
+      cin >> filename;
+      filename = "img/input/"+filename;
       DiffImg img(filename.c_str());
       FloatImg comp(filename.c_str());
       FloatImg mask(img);
@@ -27,7 +29,10 @@ int main(){
       //img = img.get_RGBtoYCbCr().get_channel(0);
       //mask = mask.get_channel(0);
       //cout << "MSE : " << img.MSE(comp) << endl;
-      BregmanInpainter solver(img,mask,0.001f,0.001f,0.0001f,0.01f,0.01f);
+      float l0, l1, l2, a, b;
+      cin >> l0 >> l1 >> l2 >> a >> b;
+      //0.001f,0.001f,0.0001f,0.01f,0.01f
+      BregmanInpainter solver(img,mask,l0,l1,l2,a,b);
       solver.solve();
       solver.save("out.png");
 

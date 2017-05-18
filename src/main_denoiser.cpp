@@ -12,14 +12,19 @@ int main(){
 
       feenableexcept(FE_INVALID | FE_OVERFLOW);
       //Original image
-      char* filename = "img/input/lena.bmp";
-      DiffImg img(filename);
-      FloatImg comp(filename);
-      img.noise(15,3);//.normalize(0,255);
+      string filename;
+      cin >> filename;
+      filename = "img/input/"+filename;
+      DiffImg img(filename.c_str());
+      FloatImg comp(filename.c_str());
+      img.noise(30).normalize(0,255);
       img = img.get_RGBtoYCbCr().get_channel(0);
       img.save("lena_bruit.bmp");
       //cout << "MSE : " << img.MSE(comp) << endl;
-      BregmanDenoiser solver(img,0.06f,0.05f,0.6f,0.5f);
+      float l1, l2, a, b;
+      cin >> l1 >> l2 >> a >> b;
+      // 0.06 0.05 0.6 0.5
+      BregmanDenoiser solver(img,l1,l2,a,b);
       solver.solve();
       solver.save("lena.bmp");
 

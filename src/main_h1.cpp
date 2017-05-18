@@ -4,11 +4,11 @@ using namespace cimg_library;
 using namespace std;
 
 int main(){
-  string filename("img/input/lena.bmp");
-  CImg<float> ud(filename.c_str());
-  ud.noise(30);
-  ud = ud.get_RGBtoYCbCr().get_channel(0);
-  CImg<float> u(ud);
+  string filename("img/input/lena.bmp");//Nom du fichier
+  CImg<float> ud(filename.c_str());//Création de l'image
+  ud.noise(30);//Ajout de bruit
+  ud = ud.get_RGBtoYCbCr().get_channel(0);//RGB vers niveaux de gris
+  CImg<float> u(ud);//On copie  l'image observée
   ud.save("img/output/h1_start.png");
   CImgDisplay disp(u,"Regularisation H^1",0,false,false);
 
