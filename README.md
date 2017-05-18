@@ -33,6 +33,19 @@ Pour les paramètres par défaut, on peut utiliser
     bin/inpainter < input_inpainter
 
 
+### Débruitage par régularisation H^1
+On peut compiler le programme effectuant la régularisation H^1 avec la commande
+
+    make h1
+
+Il s'exécute ainsi
+
+    bin/h1
+
+Il n'est pas possible de changer l'image utilisée ou les paramètres du modèle
+sans recompiler le programme.
+
+
 ### En cas d'erreur à la compilation
 Créer les dossiers `ob/` et `bin/`.
 
