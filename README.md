@@ -18,7 +18,7 @@ Pour les paramètres par défaut, on peut utiliser
     bin/denoiser < input_denoiser
 
 ### Inpainting
-POur compiler ce programme, on utilise la commande
+Pour compiler ce programme, on utilise la commande
 
     make inpainter
 
