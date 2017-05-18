@@ -24,7 +24,7 @@ POur compiler ce programme, on utilise la commande
 
 Pour exécuter ce programme, on utilise
 
-    bin/denoiser image l1 l2 a b
+    bin/inpainter image l1 l2 a b
 
 Le programme recherche le fichier image dans `img/input/`
 
