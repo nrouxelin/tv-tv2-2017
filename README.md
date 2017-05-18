@@ -47,7 +47,7 @@ sans recompiler le programme.
 
 
 ### En cas d'erreur à la compilation
-Créer les dossiers `ob/` et `bin/`.
+Créer les dossiers `obj/` et `bin/`.
 
 
 ## Futures versions
